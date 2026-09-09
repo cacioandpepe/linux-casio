@@ -35,8 +35,13 @@ cflags-$(CONFIG_CPU_SH2A)		+= $(call cc-option,-m2a,) \
 					   $(call cc-option,-m2a-nofpu,) \
 					   $(call cc-option,-m4-nofpu,)
 cflags-$(CONFIG_CPU_SH3)		:= $(call cc-option,-m3,)
+ifeq ($(CONFIG_CPU_SH4A),y)
+# SH4A-specific/fixed-target compilers may reject generic -m4/-m4-nofpu.
+cflags-$(CONFIG_CPU_SH4)		:=
+else
 cflags-$(CONFIG_CPU_SH4)		:= $(call cc-option,-m4,) \
 	$(call cc-option,-mno-implicit-fp,-m4-nofpu)
+endif
 cflags-$(CONFIG_CPU_SH4A)		+= $(call cc-option,-m4a,) \
 					   $(call cc-option,-m4a-nofpu,)
 cflags-$(CONFIG_CPU_SH4AL_DSP)		+= $(call cc-option,-m4al,)
@@ -123,6 +128,7 @@ machdir-$(CONFIG_SH_KFR2R09)			+= mach-kfr2r09
 machdir-$(CONFIG_SH_ECOVEC)			+= mach-ecovec24
 machdir-$(CONFIG_SH_SDK7786)			+= mach-sdk7786
 machdir-$(CONFIG_SH_X3PROTO)			+= mach-x3proto
+machdir-$(CONFIG_SH_FX9750GIII)		+= mach-fx9750giii
 machdir-$(CONFIG_SH_LANDISK)			+= mach-landisk
 machdir-y					+= mach-common
 

@@ -146,9 +146,31 @@ static inline void enable_mmu(void)
 {
 	unsigned int cpu = smp_processor_id();
 
-	/* Enable MMU */
+#ifdef CONFIG_SH_FX9750GIII
+	/*
+	 * The fx-9750GIII enters Linux with the SH7305 MMU already active.
+	 *
+	 * Casio maps add-in ROM through UTLB entries.  MMU_CONTROL_INIT
+	 * contains MMUCR_TI, which would invalidate those mappings and
+	 * immediately remove the code Linux is executing from.
+	 *
+	 * Preserve the inherited translations.  If address translation
+	 * somehow isn't enabled, enable AT without asserting TI.
+	 */
+	{
+		unsigned long cr = __raw_readl(MMUCR);
+
+		if (!(cr & MMUCR_AT)) {
+			cr |= MMUCR_AT;
+			__raw_writel(cr, MMUCR);
+			ctrl_barrier();
+		}
+	}
+#else
+	/* Generic SH: enable MMU and invalidate the existing TLB. */
 	__raw_writel(MMU_CONTROL_INIT, MMUCR);
 	ctrl_barrier();
+#endif
 
 	if (asid_cache(cpu) == NO_CONTEXT)
 		asid_cache(cpu) = MMU_CONTEXT_FIRST_VERSION;

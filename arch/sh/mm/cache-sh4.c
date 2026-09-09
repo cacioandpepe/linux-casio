@@ -28,7 +28,7 @@
  */
 #define MAX_ICACHE_PAGES	32
 
-static void __flush_cache_one(unsigned long addr, unsigned long phys,
+static void __attribute__((__noinline__, __section__(".fx9750.uncached.text"))) __flush_cache_one(unsigned long addr, unsigned long phys,
 			       unsigned long exec_offset);
 
 /*
@@ -37,7 +37,7 @@ static void __flush_cache_one(unsigned long addr, unsigned long phys,
  * Called from kernel/module.c:sys_init_module and routine for a.out format,
  * signal handler code and kprobes code
  */
-static void sh4_flush_icache_range(void *args)
+static void __attribute__((__noinline__, __section__(".fx9750.uncached.text"))) sh4_flush_icache_range(void *args)
 {
 	struct flusher_data *data = args;
 	unsigned long start, end;
@@ -135,7 +135,7 @@ static void sh4_flush_dcache_folio(void *arg)
 }
 
 /* TODO: Selective icache invalidation through IC address array.. */
-static void flush_icache_all(void)
+static void __attribute__((__noinline__, __section__(".fx9750.uncached.text"))) flush_icache_all(void)
 {
 	unsigned long flags, ccr;
 
@@ -320,7 +320,7 @@ static void sh4_flush_cache_range(void *args)
  * operation (purge/write-back) is selected by the lower 2 bits of
  * 'phys'.
  */
-static void __flush_cache_one(unsigned long addr, unsigned long phys,
+static void __attribute__((__noinline__, __section__(".fx9750.uncached.text"))) __flush_cache_one(unsigned long addr, unsigned long phys,
 			       unsigned long exec_offset)
 {
 	int way_count;

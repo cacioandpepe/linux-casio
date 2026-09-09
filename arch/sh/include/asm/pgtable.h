@@ -66,7 +66,15 @@ static inline unsigned long phys_addr_mask(void)
 #define PTE_PHYS_MASK		(phys_addr_mask() & PAGE_MASK)
 #define PTE_FLAGS_MASK		(~(PTE_PHYS_MASK) << PAGE_SHIFT)
 
-#define VMALLOC_START	(P3SEG)
+#ifdef CONFIG_SH_FX9750GIII
+/*
+ * Reserve P3 0xc0000000..0xc03fffff for the
+ * scattered flash-backed Linux kernel mapping.
+ */
+#define VMALLOC_START    (P3SEG + 0x00400000UL)
+#else
+#define VMALLOC_START    (P3SEG)
+#endif
 #define VMALLOC_END	(FIXADDR_START-2*PAGE_SIZE)
 
 #include <asm/pgtable_32.h>

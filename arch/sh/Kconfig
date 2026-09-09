@@ -407,6 +407,14 @@ config CPU_SUBTYPE_SH7724
 	help
 	  Select SH7724 if you have an SH-MobileR2R CPU.
 
+config CPU_SUBTYPE_SH7305
+	bool "Support SH7305 processor"
+	select CPU_SH4AL_DSP
+	help
+	  Select SH7305 for the SH4AL-DSP processor used in
+	  supported Casio graphing calculators.
+
+
 config CPU_SUBTYPE_SH7734
 	bool "Support SH7734 processor"
 	select CPU_SH4A

@@ -7,7 +7,12 @@
 #include <linux/irqflags.h>
 #include <linux/module.h>
 
-void notrace arch_local_irq_restore(unsigned long flags)
+#ifdef CONFIG_SH_FX9750GIII
+void notrace __attribute__((section(".fx9750.irqflags.text")))
+#else
+void notrace
+#endif
+arch_local_irq_restore(unsigned long flags)
 {
 	unsigned long __dummy0, __dummy1;
 
@@ -37,7 +42,12 @@ void notrace arch_local_irq_restore(unsigned long flags)
 }
 EXPORT_SYMBOL(arch_local_irq_restore);
 
-unsigned long notrace arch_local_save_flags(void)
+#ifdef CONFIG_SH_FX9750GIII
+unsigned long notrace __attribute__((section(".fx9750.irqflags.text")))
+#else
+unsigned long notrace
+#endif
+arch_local_save_flags(void)
 {
 	unsigned long flags;
 

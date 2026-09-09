@@ -75,6 +75,15 @@ OFF_TRA	=  (16*4+6*4)
 #define current		r7	/* r7_bank1 */
 
 #include <asm/entry-macros.S>
+
+#ifdef CONFIG_SH_FX9750GIII
+/*
+ * Must remain in P1 RAM.  This contains vbr_base and the
+ * low-level exception/TLB entry paths.
+ */
+.section .fx9750.entry.text,"ax"
+#endif
+
 	
 /*
  * Kernel mode register usage:

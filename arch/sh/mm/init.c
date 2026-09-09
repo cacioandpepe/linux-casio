@@ -20,6 +20,7 @@
 #include <linux/dma-mapping.h>
 #include <linux/export.h>
 #include <asm/mmu_context.h>
+#include <asm/fx9750_boot.h>
 #include <asm/mmzone.h>
 #include <asm/kexec.h>
 #include <asm/tlb.h>
@@ -303,13 +304,36 @@ void __init paging_init(void)
 	do_init_bootmem();
 	ioremap_fixed_init();
 
-	/* We don't need to map the kernel through the TLB, as
-	 * it is permanatly mapped using P1. So clear the
-	 * entire pgd. */
+	/*
+	 * Normal SH kernels execute permanently from P1 and therefore
+	 * don't need a kernel text mapping in the page tables.
+	 *
+	 * The fx-9750GIII is different: most kernel text executes from
+	 * scattered flash pages mapped into P3 by the add-in loader.
+	 */
 	memset(swapper_pg_dir, 0, sizeof(swapper_pg_dir));
 
-	/* Set an initial value for the MMU.TTB so we don't have to
-	 * check for a null value. */
+#ifdef CONFIG_SH_FX9750GIII
+	{
+		struct fx9750_bootinfo *bi =
+			(struct fx9750_bootinfo *)FX9750_BOOTINFO_P1;
+
+		if (bi->magic == FX9750_BOOT_MAGIC &&
+		    bi->version == FX9750_BOOT_VERSION &&
+		    bi->rom_va == FX9750_ROM_VA &&
+		    bi->rom_pages > 0 &&
+		    bi->rom_pages <= 1024) {
+			/*
+			 * 4 KiB pages -> one PGD slot covers 4 MiB.
+			 * The loader has already constructed this PTE page.
+			 */
+			swapper_pg_dir[FX9750_ROM_VA >> PGDIR_SHIFT] =
+				__pgd(FX9750_BOOT_PTE_P1);
+		}
+	}
+#endif
+
+	/* Switch later TLB refills to Linux's page directory. */
 	set_TTB(swapper_pg_dir);
 
 	/*

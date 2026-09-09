@@ -292,12 +292,27 @@ void __init setup_arch(char **cmdline_p)
 		root_mountflags &= ~MS_RDONLY;
 	setup_initial_init_mm(_text, _etext, _edata, _end);
 
-	code_resource.start = virt_to_phys(_text);
-	code_resource.end = virt_to_phys(_etext)-1;
-	data_resource.start = virt_to_phys(_etext);
-	data_resource.end = virt_to_phys(_edata)-1;
+#ifdef CONFIG_SH_FX9750GIII
+	/*
+	 * Kernel text resides in scattered flash pages mapped through P3,
+	 * so it has no single contiguous physical resource interval.
+	 *
+	 * Writable sections remain in the normal P1 RAM linear mapping.
+	 */
+	code_resource.start = 0;
+	code_resource.end = 0;
+	data_resource.start = virt_to_phys(_sdata);
+	data_resource.end = virt_to_phys(_edata) - 1;
 	bss_resource.start = virt_to_phys(__bss_start);
-	bss_resource.end = virt_to_phys(__bss_stop)-1;
+	bss_resource.end = virt_to_phys(__bss_stop) - 1;
+#else
+	code_resource.start = virt_to_phys(_text);
+	code_resource.end = virt_to_phys(_etext) - 1;
+	data_resource.start = virt_to_phys(_etext);
+	data_resource.end = virt_to_phys(_edata) - 1;
+	bss_resource.start = virt_to_phys(__bss_start);
+	bss_resource.end = virt_to_phys(__bss_stop) - 1;
+#endif
 
 #ifdef CONFIG_CMDLINE_OVERWRITE
 	strscpy(command_line, CONFIG_CMDLINE, sizeof(command_line));

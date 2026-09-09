@@ -143,6 +143,11 @@ void cpu_probe(void)
 		break;
 	case 0x300b:
 		switch (prr) {
+		case 0xc0:
+			boot_cpu_data.type = CPU_SH7305;
+			/* SH7305 is SH4AL-DSP without an FPU. */
+			boot_cpu_data.flags &= ~CPU_HAS_FPU;
+			break;
 		case 0x20:
 			boot_cpu_data.type = CPU_SH7724;
 			boot_cpu_data.flags |= CPU_HAS_L2_CACHE;
