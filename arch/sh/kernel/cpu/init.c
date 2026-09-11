@@ -305,12 +305,54 @@ static inline void dsp_init(void) { }
  * Each processor family is still responsible for doing its own probing
  * and cache configuration in cpu_probe().
  */
+
+#ifdef CONFIG_SH_FX9750GIII
+/*
+ * fx-9750GIII cpu_init() bring-up.
+ *
+ * Change this number only:
+ *
+ *   1 = after cpu_probe()
+ *   2 = after cache_init()
+ *   3 = after fpu_init()/dsp_init()
+ *   4 = at end of cpu_init()
+ */
+#define FX9750_CPUINIT_STAGE 3
+
+#define FX9750_CPUINIT_HANG(stage)                      \
+	do {                                                \
+		if (FX9750_CPUINIT_STAGE == (stage))            \
+			__asm__ __volatile__(                       \
+				"1:\n\t"                                \
+				"bra 1b\n\t"                            \
+				" nop\n\t"                              \
+				: : : "memory");                        \
+	} while (0)
+#else
+#define FX9750_CPUINIT_HANG(stage) do { } while (0)
+#endif
+
 asmlinkage void cpu_init(void)
 {
+
+#ifdef CONFIG_SH_FX9750GIII
+	/* FX9750 CPU_INIT ENTRY TEST
+	 *
+	 * If the calculator freezes here, execution successfully entered
+	 * cpu_init() through the P3/XIP mapping.
+	 */
+	__asm__ __volatile__(
+		"1:\n\t"
+		"bra 1b\n\t"
+		" nop\n\t"
+	);
+#endif
+
 	current_thread_info()->cpu = hard_smp_processor_id();
 
 	/* First, probe the CPU */
 	cpu_probe();
+	FX9750_CPUINIT_HANG(1);
 
 	if (current_cpu_data.type == CPU_SH_NONE)
 		panic("Unknown CPU");
@@ -331,6 +373,7 @@ asmlinkage void cpu_init(void)
 
 	/* Init the cache */
 	cache_init();
+	FX9750_CPUINIT_HANG(2);
 
 	if (raw_smp_processor_id() == 0) {
 #ifdef CONFIG_MMU
@@ -347,6 +390,7 @@ asmlinkage void cpu_init(void)
 
 	fpu_init();
 	dsp_init();
+	FX9750_CPUINIT_HANG(3);
 
 	/*
 	 * Initialize the per-CPU ASID cache very early, since the
@@ -358,6 +402,7 @@ asmlinkage void cpu_init(void)
 
 	speculative_execution_init();
 	expmask_init();
+	FX9750_CPUINIT_HANG(4);
 
 	/* Do the rest of the boot processor setup */
 	if (raw_smp_processor_id() == 0) {

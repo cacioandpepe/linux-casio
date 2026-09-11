@@ -138,9 +138,11 @@ ENTRY(tlb_protection_violation_store)
 	 mov	#(FAULT_CODE_PROT | FAULT_CODE_WRITE), r5
 
 call_handle_tlbmiss:
+
 	mov.l	1f, r0
 	mov	r5, r8
 	mov.l	@r0, r6
+
 	mov.l	2f, r0
 	sts	pr, r10
 	jsr	@r0

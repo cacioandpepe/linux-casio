@@ -13,6 +13,66 @@
 #include <asm/mmu_context.h>
 #include <asm/cacheflush.h>
 
+
+#ifdef CONFIG_SH_FX9750GIII
+/*
+ * Load one raw 1 KiB SH4 TLB mapping.
+ *
+ * Linux itself still uses 4 KiB software pages.  This helper exists only
+ * for the fragmented flash backing of the fx-9750GIII P3 kernel image.
+ *
+ * For legacy SH4:
+ *   SZ1=0, SZ0=0 -> 1 KiB
+ *
+ * Do not encode this through pte_t: bits 10/11 are physical PPN bits for
+ * a 1 KiB entry but Linux uses them as software flags for >=4 KiB pages.
+ */
+void __attribute__((section(".fx9750.tlbrefill.text")))
+fx9750_update_tlb_1k(unsigned long address, unsigned long phys)
+{
+	unsigned long flags;
+	unsigned long vpn;
+	unsigned long ptel;
+
+	local_irq_save(flags);
+
+	/* 1 KiB VPN: clear the low ten address bits. */
+	vpn = (address & 0xfffffc00UL) | get_asid();
+	__raw_writel(vpn, MMU_PTEH);
+
+	/*
+	 * Storage flash is normal Area-0 memory; no special PTEA
+	 * timing/space attributes are required.
+	 */
+	if (cpu_data->flags & CPU_HAS_PTEA)
+		__raw_writel(0, MMU_PTEA);
+
+	/*
+	 * Raw physical PPN includes bits 10 and 11.
+	 *
+	 * Kernel read-only equivalent:
+	 *   V | C | D | SH
+	 *
+	 * Deliberately NO RW and NO SZ0/SZ1 bits.
+	 */
+	ptel = (phys & 0x1ffffc00UL) |
+	       _PAGE_PRESENT |
+	       _PAGE_CACHABLE |
+	       _PAGE_DIRTY |
+	       _PAGE_HW_SHARED;
+
+#ifdef CONFIG_CACHE_WRITETHROUGH
+	ptel |= _PAGE_WT;
+#endif
+
+	__raw_writel(ptel, MMU_PTEL);
+
+	asm volatile("ldtlb" : : : "memory");
+
+	local_irq_restore(flags);
+}
+#endif
+
 #ifdef CONFIG_SH_FX9750GIII
 void __attribute__((section(".fx9750.tlbrefill.text")))
 #else

@@ -37,6 +37,15 @@ pgd_t swapper_pg_dir[PTRS_PER_PGD];
 void __init generic_mem_init(void)
 {
 	memblock_add(__MEMORY_START, __MEMORY_SIZE);
+
+#ifdef CONFIG_SH_FX9750GIII
+	/*
+	 * Persistent loader-supplied physical map for the fragmented
+	 * P3 kernel ROM.  2048 x 4-byte entries occupy 8 KiB.
+	 */
+	memblock_reserve(FX9750_BOOT_1KMAP_PHYS,
+			 FX9750_BOOT_1KMAP_SIZE);
+#endif
 }
 
 void __init __weak plat_mem_setup(void)
@@ -322,7 +331,10 @@ void __init paging_init(void)
 		    bi->version == FX9750_BOOT_VERSION &&
 		    bi->rom_va == FX9750_ROM_VA &&
 		    bi->rom_pages > 0 &&
-		    bi->rom_pages <= 1024) {
+		    bi->rom_pages <= 1024 &&
+		    bi->rom_1k_blocks > 0 &&
+		    bi->rom_1k_blocks <= FX9750_BOOT_1KMAP_MAX &&
+		    bi->rom_1k_map_p1 == FX9750_BOOT_1KMAP_P1) {
 			/*
 			 * 4 KiB pages -> one PGD slot covers 4 MiB.
 			 * The loader has already constructed this PTE page.

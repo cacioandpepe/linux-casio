@@ -76,11 +76,24 @@ ENTRY(_stext)
 	 * and this will become less of an issue.
 	 */
 	PREFI(5f, r0)
+
+#ifdef CONFIG_SH_FX9750GIII
+	/*
+	 * cpu_init lives in the P3/XIP image on fx-9750GIII.
+	 *
+	 * Do not PREFI it here: this executes before the kernel stack and
+	 * r7_bank/thread_info are installed.  A TLB miss on the P3 address
+	 * at this point would enter the Linux exception path with the old
+	 * loader/Casio execution context.
+	 */
+#else
 	PREFI(6f, r0)
+#endif
 
 	!
 	mov.l	2f, r0
 	mov	r0, r15		! Set initial r15 (stack pointer)
+
 #ifdef CONFIG_CPU_HAS_SR_RB
 	mov.l	7f, r0
 	ldc	r0, r7_bank	! ... and initial thread_info
@@ -315,16 +328,31 @@ ENTRY(_stext)
 10:		
 #endif
 
+
 #ifdef CONFIG_OF_EARLY_FLATTREE
 	mov.l	8f, r0		! Make flat device tree available early.
 	jsr	@r0
 	 mov	r12, r4
 #endif
 
+
+
 	!			Additional CPU initialization
 	mov.l	6f, r0
 	jsr	@r0
 	 nop
+
+#ifdef CONFIG_SH_FX9750GIII
+	/*
+	 * fx-9750GIII bring-up stage 3.
+	 *
+	 * Reaching here proves cpu_init() returned successfully.
+	 */
+.Lfx9750_stage3:
+	bra	.Lfx9750_stage3
+	 nop
+#endif
+
 
 	SYNCO()			! Wait for pending instructions..
 	
@@ -337,7 +365,7 @@ ENTRY(_stext)
 #if defined(CONFIG_CPU_SH2)
 1:	.long	0x000000F0		! IMASK=0xF
 #else
-1:	.long	0x500080F0		! MD=1, RB=0, BL=1, FD=1, IMASK=0xF
+1:	.long	0x400080F0		! MD=1, RB=0, BL=0, FD=1, IMASK=0xF
 #endif
 ENTRY(stack_start)
 2:	.long	init_thread_union+THREAD_SIZE
