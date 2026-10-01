@@ -50,7 +50,7 @@ SECTIONS
 
 	. = FX9750_RAM_BASE + CONFIG_ZERO_PAGE_OFFSET;
 
-	__fx9750_ram_start = .;
+	__sh7305_ram_start = .;
 
 	.empty_zero_page : AT(ADDR(.empty_zero_page)) {
 		*(.empty_zero_page)
@@ -64,21 +64,21 @@ SECTIONS
 
 	. = ALIGN(PAGE_SIZE);
 
-	.fx9750.entry.text : AT(ADDR(.fx9750.entry.text)) {
-		__fx9750_entry_start = .;
+	.sh7305.entry.text : AT(ADDR(.sh7305.entry.text)) {
+		__sh7305_entry_start = .;
 
-		KEEP(*(.fx9750.entry.text))
-		KEEP(*(.fx9750.tlb.text))
-		KEEP(*(.fx9750.tlbrefill.text))
-		KEEP(*(.fx9750.irqflags.text))
-		KEEP(*(.fx9750.uncached.text))
+		KEEP(*(.sh7305.entry.text))
+		KEEP(*(.sh7305.tlb.text))
+		KEEP(*(.sh7305.tlbrefill.text))
+		KEEP(*(.sh7305.irqflags.text))
+		KEEP(*(.sh7305.uncached.text))
 
-		__fx9750_entry_end = .;
+		__sh7305_entry_end = .;
 	} = 0x0009
 
 	. = ALIGN(PAGE_SIZE);
 
-	__fx9750_ram_after_entry = .;
+	__sh7305_ram_after_entry = .;
 
 
 	/* ---------------------------------------------------------
@@ -87,13 +87,12 @@ SECTIONS
 
 	. = FX9750_ROM_BASE;
 
-	__fx9750_rom_start = .;
+	__sh7305_rom_start = .;
 	_text = .;
 
 	.text : AT(ADDR(.text)) {
 		TEXT_TEXT
 		SCHED_TEXT
-		CPUIDLE_TEXT
 		LOCK_TEXT
 		KPROBES_TEXT
 		IRQENTRY_TEXT
@@ -113,12 +112,12 @@ SECTIONS
 
 	. = ALIGN(PAGE_SIZE);
 
-	__fx9750_rom_end = .;
-	__fx9750_rom_size =
-		__fx9750_rom_end - __fx9750_rom_start;
+	__sh7305_rom_end = .;
+	__sh7305_rom_size =
+		__sh7305_rom_end - __sh7305_rom_start;
 
-	ASSERT(__fx9750_rom_size <= 0x00400000,
-	       "fx9750: P3 ROM exceeds 4 MiB")
+	ASSERT(__sh7305_rom_size <= 0x00280000,
+	       "fx9750: P3 ROM exceeds the persistent 1 KiB map")
 
 
 	/* ---------------------------------------------------------
@@ -128,7 +127,7 @@ SECTIONS
 	 * low P1 VMA after linking the high P3 ROM region.
 	 * --------------------------------------------------------- */
 
-	.fx9750.ram.anchor __fx9750_ram_after_entry (NOLOAD) : {
+	.sh7305.ram.anchor __sh7305_ram_after_entry (NOLOAD) : {
 		BYTE(0)
 	}
 
@@ -177,17 +176,11 @@ SECTIONS
 
 	_end = .;
 
-	__fx9750_ram_end = .;
+	__sh7305_ram_end = .;
 
-	/*
-	 * Leave these untouched:
-	 *
-	 * 88045000  bootstrap PGD
-	 * 88046000  P3 ROM PTE page
-	 * 88047000  bootinfo
-	 */
-	ASSERT(__fx9750_ram_end <= 0x88045000,
-	       "fx9750: P1 RAM image overlaps boot tables")
+	/* The loader needs a page-padded RAM image below temporary repairs. */
+	ASSERT(__sh7305_ram_end <= 0x8805e000,
+	       "fx9750: P1 RAM image overlaps loader RAM sources")
 
 #else
 

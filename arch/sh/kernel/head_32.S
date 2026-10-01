@@ -342,18 +342,6 @@ ENTRY(_stext)
 	jsr	@r0
 	 nop
 
-#ifdef CONFIG_SH_FX9750GIII
-	/*
-	 * fx-9750GIII bring-up stage 3.
-	 *
-	 * Reaching here proves cpu_init() returned successfully.
-	 */
-.Lfx9750_stage3:
-	bra	.Lfx9750_stage3
-	 nop
-#endif
-
-
 	SYNCO()			! Wait for pending instructions..
 	
 	!			Start kernel

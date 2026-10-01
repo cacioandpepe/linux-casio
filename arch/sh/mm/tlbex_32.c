@@ -18,137 +18,52 @@
 #include <asm/fx9750_boot.h>
 
 #ifdef CONFIG_SH_FX9750GIII
-static int fx9750_refill_rom_1k(unsigned long address);
-#endif
-
-
-
-#ifdef CONFIG_SH_FX9750GIII
 /*
- * Fast refill for the flash-backed P3 kernel image.
- *
- * This path intentionally does not walk the normal Linux page-table
- * hierarchy.  During the earliest P3 miss, normal kernel .text is not
- * mapped yet, so calling into generic helpers there could recursively
- * fault.
- *
- * The loader has already populated the 4 KiB PTE page at 88046000.
+ * This entire path runs from P1 RAM before the first XIP instruction is
+ * mapped.  Do not call a normal P3 helper or inspect current->mm here.
+ * A damaged boot map for a ROM address is a fault, not a generic PTE walk.
  */
-static __always_inline int
-
-fx9750_rom_tlbmiss(unsigned long address)
+static int __attribute__((section(".sh7305.tlb.text")))
+fx9750_refill_rom_1k(unsigned long address, unsigned long error_code)
 {
-	struct fx9750_bootinfo *bi =
-		(struct fx9750_bootinfo *)FX9750_BOOTINFO_P1;
-	pte_t *ptes = (pte_t *)FX9750_BOOT_PTE_P1;
-	unsigned long index;
-	pte_t entry;
-
-	/*
-	 * The calculator's P3 kernel is backed by four independently-located
-	 * 1 KiB flash blocks for every Linux 4 KiB software page.
-	 */
-	{
-		int ret = fx9750_refill_rom_1k(address);
-
-		if (ret >= 0)
-			return ret;
-	}
-
-	/* -1 means "not our special ROM range". */
-	if (bi->magic != FX9750_BOOT_MAGIC ||
-	    bi->version != FX9750_BOOT_VERSION)
-		return -1;
-
-	if (bi->rom_va != FX9750_ROM_VA ||
-	    !bi->rom_size ||
-	    bi->rom_size > FX9750_ROM_MAX_SIZE)
-		return -1;
-
-	if (address < bi->rom_va ||
-	    address >= bi->rom_va + bi->rom_size)
-		return -1;
-
-	index = (address - bi->rom_va) >> PAGE_SHIFT;
-
-	if (index >= 1024 || index >= bi->rom_pages)
-		return 1;
-
-	entry = ptes[index];
-
-	if (pte_none(entry) || pte_not_present(entry))
-		return 1;
-
-	/*
-	 * __update_tlb() is forced into P1 RAM on this machine,
-	 * so this operation cannot recursively fault into P3.
-	 */
-	__update_tlb(NULL, address, entry);
-
-	return 0;
-}
-#endif
-
-
-#ifdef CONFIG_SH_FX9750GIII
-
-extern void fx9750_update_tlb_1k(unsigned long address,
-				 unsigned long phys);
-
-/*
- * Return:
- *   -1 = address is not in our special P3 ROM window
- *    0 = mapping installed
- *    1 = address belongs to ROM but boot mapping is invalid
- */
-static int __attribute__((section(".fx9750.tlb.text")))
-fx9750_refill_rom_1k(unsigned long address)
-{
-	struct fx9750_bootinfo *bi =
-		(struct fx9750_bootinfo *)FX9750_BOOTINFO_P1;
-
-	volatile unsigned int *map;
+	const struct fx9750_bootinfo *bi =
+		(const struct fx9750_bootinfo *)FX9750_BOOTINFO_P1;
+	const unsigned int *map;
 	unsigned long block;
 	unsigned int phys;
 
-	if (bi->magic != FX9750_BOOT_MAGIC ||
-	    bi->version != FX9750_BOOT_VERSION ||
+	if (address < FX9750_ROM_VA ||
+	    address >= FX9750_ROM_VA + FX9750_ROM_MAX_SIZE)
+		return -1;
+
+	if (bi->magic != SH7305_BOOT_MAGIC ||
+	    bi->version != SH7305_BOOT_VERSION ||
 	    bi->rom_va != FX9750_ROM_VA ||
-	    !bi->rom_size ||
-	    bi->rom_size > FX9750_ROM_MAX_SIZE)
-		return -1;
-
-	if (address < bi->rom_va ||
-	    address >= bi->rom_va + bi->rom_size)
-		return -1;
-
-	if (bi->rom_1k_map_p1 != FX9750_BOOT_1KMAP_P1 ||
-	    !bi->rom_1k_blocks ||
-	    bi->rom_1k_blocks > FX9750_BOOT_1KMAP_MAX)
+	    !bi->rom_size || bi->rom_size > FX9750_ROM_MAX_SIZE ||
+	    (bi->rom_size & (PAGE_SIZE - 1)) ||
+	    bi->rom_pages != (bi->rom_size >> PAGE_SHIFT) ||
+	    bi->rom_1k_blocks != (bi->rom_size >> 10) ||
+	    bi->rom_1k_blocks > SH7305_BOOT_1KMAP_MAX ||
+	    bi->rom_1k_map_p1 != SH7305_BOOT_1KMAP_P1 ||
+	    address - FX9750_ROM_VA >= bi->rom_size)
 		return 1;
 
-	/*
-	 * Hardware mapping granularity is 1 KiB even though Linux
-	 * continues to use 4 KiB software pages.
-	 *
-	 * Map only the 1 KiB block which actually faulted.
-	 * One exception -> one LDTLB.
-	 */
-	block = (address - bi->rom_va) >> 10;
-
-	if (block >= bi->rom_1k_blocks)
+	/* The P3 backing is immutable, including blocks repaired into RAM. */
+	if (error_code)
 		return 1;
 
-	map = (volatile unsigned int *)bi->rom_1k_map_p1;
+	block = (address - FX9750_ROM_VA) >> 10;
+	map = (const unsigned int *)SH7305_BOOT_1KMAP_P1;
 	phys = map[block];
 
-	if (phys == 0xffffffffu ||
-	    (phys & 0x3ffu) ||
-	    phys >= 0x00800000u)
+	if ((phys & 0x3ffu) ||
+	    !((phys >= SH7305_BOOT_FLASH_FIRST &&
+	       phys < SH7305_BOOT_FLASH_END) ||
+	      (phys >= SH7305_BOOT_REPAIR_PHYS &&
+	       phys < SH7305_BOOT_REPAIR_PHYS + SH7305_BOOT_REPAIR_SIZE)))
 		return 1;
 
 	fx9750_update_tlb_1k(address, phys);
-
 	return 0;
 }
 #endif
@@ -157,7 +72,7 @@ fx9750_refill_rom_1k(unsigned long address)
  * Called with interrupts disabled.
  */
 #ifdef CONFIG_SH_FX9750GIII
-asmlinkage int __attribute__((section(".fx9750.tlb.text")))
+asmlinkage int __attribute__((section(".sh7305.tlb.text")))
 #else
 asmlinkage int __kprobes
 #endif
@@ -165,26 +80,19 @@ handle_tlbmiss(struct pt_regs *regs, unsigned long error_code,
 	       unsigned long address)
 {
 
-#ifdef CONFIG_SH_FX9750GIII
-	/*
-	 * FX9750 HANDLE_TLBMISS ENTRY TEST
-	 *
-	 * Freeze immediately on entering the C TLB handler.
-	 * Compiler prologue may execute before this loop.
-	 */
-	__asm__ __volatile__(
-		"1:\n\t"
-		"bra 1b\n\t"
-		" nop\n\t"
-	);
-#endif
-
 	pgd_t *pgd;
 	p4d_t *p4d;
 	pud_t *pud;
 	pmd_t *pmd;
 	pte_t *pte;
 	pte_t entry;
+
+#ifdef CONFIG_SH_FX9750GIII
+	int ret = fx9750_refill_rom_1k(address, error_code);
+
+	if (ret >= 0)
+		return ret;
+#endif
 
 	/*
 	 * We don't take page faults for P1, P2, and parts of P4, these

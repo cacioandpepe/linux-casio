@@ -148,14 +148,9 @@ static inline void enable_mmu(void)
 
 #ifdef CONFIG_SH_FX9750GIII
 	/*
-	 * The fx-9750GIII enters Linux with the SH7305 MMU already active.
-	 *
-	 * Casio maps add-in ROM through UTLB entries.  MMU_CONTROL_INIT
-	 * contains MMUCR_TI, which would invalidate those mappings and
-	 * immediately remove the code Linux is executing from.
-	 *
-	 * Preserve the inherited translations.  If address translation
-	 * somehow isn't enabled, enable AT without asserting TI.
+	 * The P2 loader reset the inherited OS TLB. Early XIP faults have
+	 * already installed kernel 1 KiB mappings by the time we get here.
+	 * Preserve them instead of flushing the code currently executing.
 	 */
 	{
 		unsigned long cr = __raw_readl(MMUCR);

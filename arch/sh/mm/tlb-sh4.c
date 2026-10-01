@@ -12,6 +12,7 @@
 #include <linux/io.h>
 #include <asm/mmu_context.h>
 #include <asm/cacheflush.h>
+#include <asm/fx9750_boot.h>
 
 
 #ifdef CONFIG_SH_FX9750GIII
@@ -44,8 +45,8 @@ fx9750_update_tlb_1k(unsigned long address, unsigned long phys)
 	 * Storage flash is normal Area-0 memory; no special PTEA
 	 * timing/space attributes are required.
 	 */
-	if (cpu_data->flags & CPU_HAS_PTEA)
-		__raw_writel(0, MMU_PTEA);
+	/* SH7305 has PTEA; cpu_probe() may not have run on this first miss. */
+	__raw_writel(0, MMU_PTEA);
 
 	/*
 	 * Raw physical PPN includes bits 10 and 11.
