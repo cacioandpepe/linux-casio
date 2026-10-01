@@ -178,8 +178,8 @@ SECTIONS
 
 	__sh7305_ram_end = .;
 
-	/* The loader needs a page-padded RAM image below temporary repairs. */
-	ASSERT(__sh7305_ram_end <= 0x8805e000,
+	/* The loader needs a page-padded RAM image below persistent ROM repairs. */
+	ASSERT(__sh7305_ram_end <= 0x88056000,
 	       "fx9750: P1 RAM image overlaps loader RAM sources")
 
 #else

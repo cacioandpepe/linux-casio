@@ -44,6 +44,8 @@ void __init generic_mem_init(void)
 			 SH7305_BOOT_1KMAP_SIZE);
 	memblock_reserve(SH7305_BOOT_REPAIR_PHYS,
 			 SH7305_BOOT_REPAIR_SIZE);
+	memblock_reserve(SH7305_BOOT_REPAIR_EXTRA_PHYS,
+			 SH7305_BOOT_REPAIR_EXTRA_SIZE);
 	memblock_reserve(SH7305_BOOT_PGD_PHYS,
 			 SH7305_BOOT_RESERVED_SIZE);
 #endif
