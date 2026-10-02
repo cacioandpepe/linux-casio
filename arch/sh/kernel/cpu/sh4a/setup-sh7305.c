@@ -6,6 +6,7 @@
  */
 
 #include <linux/init.h>
+#include <linux/io.h>
 #include <linux/ioport.h>
 #include <linux/platform_device.h>
 #include <linux/sh_timer.h>
@@ -68,6 +69,9 @@ static struct platform_device *sh7305_early_devices[] __initdata = {
 
 void __init plat_early_device_setup(void)
 {
+	/* Preserve clock dividers and enable TMU0 (MSTPCR0 bit 15). */
+	__raw_writel(__raw_readl(0xa4150030) & ~(1U << 15), 0xa4150030);
+	__raw_readl(0xa4150030);
 	sh_early_platform_add_devices(sh7305_early_devices,
 				      ARRAY_SIZE(sh7305_early_devices));
 }

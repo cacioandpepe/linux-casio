@@ -63,8 +63,10 @@ fx9750_refill_rom_1k(unsigned long address, unsigned long error_code)
 	       phys < SH7305_BOOT_REPAIR_PHYS + SH7305_BOOT_REPAIR_SIZE) ||
 	      (phys >= SH7305_BOOT_REPAIR_EXTRA_PHYS &&
 	       phys < SH7305_BOOT_REPAIR_EXTRA_PHYS +
-		      SH7305_BOOT_REPAIR_EXTRA_SIZE)))
+		      SH7305_BOOT_REPAIR_EXTRA_SIZE))) {
+		fx9750_lcd_fault(address, phys);
 		return 1;
+	}
 
 	fx9750_update_tlb_1k(address, phys);
 	return 0;

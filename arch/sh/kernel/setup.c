@@ -41,6 +41,7 @@
 #include <asm/clock.h>
 #include <asm/smp.h>
 #include <asm/mmu_context.h>
+#include <asm/fx9750_boot.h>
 #include <asm/mmzone.h>
 #include <asm/processor.h>
 #include <asm/sparsemem.h>
@@ -270,6 +271,9 @@ void __ref sh_fdt_init(phys_addr_t dt_phys)
 void __init setup_arch(char **cmdline_p)
 {
 	enable_mmu();
+#ifdef CONFIG_SH_FX9750GIII
+	fx9750_lcd_console_init();
+#endif
 
 	ROOT_DEV = old_decode_dev(ORIG_ROOT_DEV);
 

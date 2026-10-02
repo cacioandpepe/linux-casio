@@ -337,10 +337,22 @@ ENTRY(_stext)
 
 
 
+#ifdef CONFIG_SH_FX9750GIII
+	mov.l	.Llcd_stage, r0
+	jsr	@r0
+	 mov	#1, r4
+#endif
+
 	!			Additional CPU initialization
 	mov.l	6f, r0
 	jsr	@r0
 	 nop
+
+#ifdef CONFIG_SH_FX9750GIII
+	mov.l	.Llcd_stage, r0
+	jsr	@r0
+	 mov	#2, r4
+#endif
 
 	SYNCO()			! Wait for pending instructions..
 	
@@ -354,6 +366,9 @@ ENTRY(_stext)
 1:	.long	0x000000F0		! IMASK=0xF
 #else
 1:	.long	0x400080F0		! MD=1, RB=0, BL=0, FD=1, IMASK=0xF
+#endif
+#ifdef CONFIG_SH_FX9750GIII
+.Llcd_stage: .long fx9750_lcd_stage
 #endif
 ENTRY(stack_start)
 2:	.long	init_thread_union+THREAD_SIZE

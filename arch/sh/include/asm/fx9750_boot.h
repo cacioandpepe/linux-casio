@@ -2,7 +2,7 @@
 #define __ASM_SH_SH7305_BOOT_H
 
 #define SH7305_BOOT_MAGIC          0x46583937u
-#define SH7305_BOOT_VERSION        4
+#define SH7305_BOOT_VERSION        5
 
 #define FX9750_ROM_VA              0xc0000000UL
 #define FX9750_ROM_MAX_SIZE        0x00400000UL
@@ -49,6 +49,9 @@ struct fx9750_bootinfo {
 };
 
 #ifdef CONFIG_SH_FX9750GIII
+void fx9750_lcd_stage(unsigned stage);
+void fx9750_lcd_fault(unsigned long address, unsigned long physical);
+void fx9750_lcd_console_init(void);
 void fx9750_update_tlb_1k(unsigned long address, unsigned long phys);
 #endif
 

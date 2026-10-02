@@ -72,6 +72,8 @@ SECTIONS
 		KEEP(*(.sh7305.tlbrefill.text))
 		KEEP(*(.sh7305.irqflags.text))
 		KEEP(*(.sh7305.uncached.text))
+		KEEP(*(.sh7305.console.text))
+		KEEP(*(.sh7305.console.rodata))
 
 		__sh7305_entry_end = .;
 	} = 0x0009

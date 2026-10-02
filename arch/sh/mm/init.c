@@ -42,10 +42,27 @@ void __init generic_mem_init(void)
 	/* Keep the complete map, repaired ROM blocks, PTEs and bootinfo alive. */
 	memblock_reserve(SH7305_BOOT_1KMAP_PHYS,
 			 SH7305_BOOT_1KMAP_SIZE);
-	memblock_reserve(SH7305_BOOT_REPAIR_PHYS,
-			 SH7305_BOOT_REPAIR_SIZE);
-	memblock_reserve(SH7305_BOOT_REPAIR_EXTRA_PHYS,
-			 SH7305_BOOT_REPAIR_EXTRA_SIZE);
+	/* Only repair pages actually referenced by the immutable map stay pinned. */
+	{
+		const struct fx9750_bootinfo *bi =
+			(const struct fx9750_bootinfo *)FX9750_BOOTINFO_P1;
+		const unsigned int *map =
+			(const unsigned int *)SH7305_BOOT_1KMAP_P1;
+		if (bi->magic != SH7305_BOOT_MAGIC ||
+		    bi->version != SH7305_BOOT_VERSION ||
+		    !bi->rom_1k_blocks ||
+		    bi->rom_1k_blocks > SH7305_BOOT_1KMAP_MAX)
+			panic("Invalid fx9750 boot map");
+		for (unsigned int i = 0; i < bi->rom_1k_blocks; i++) {
+			unsigned int phys = map[i];
+			if ((phys >= SH7305_BOOT_REPAIR_PHYS &&
+			     phys < SH7305_BOOT_REPAIR_PHYS + SH7305_BOOT_REPAIR_SIZE) ||
+			    (phys >= SH7305_BOOT_REPAIR_EXTRA_PHYS &&
+			     phys < SH7305_BOOT_REPAIR_EXTRA_PHYS +
+				    SH7305_BOOT_REPAIR_EXTRA_SIZE))
+				memblock_reserve(phys & PAGE_MASK, PAGE_SIZE);
+		}
+	}
 	memblock_reserve(SH7305_BOOT_PGD_PHYS,
 			 SH7305_BOOT_RESERVED_SIZE);
 #endif

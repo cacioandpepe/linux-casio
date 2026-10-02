@@ -6730,9 +6730,17 @@ void calculate_min_free_kbytes(void)
 	lowmem_kbytes = nr_free_buffer_pages() * (PAGE_SIZE >> 10);
 	new_min_free_kbytes = int_sqrt(lowmem_kbytes * 16);
 
-	if (new_min_free_kbytes > user_min_free_kbytes)
+	if (new_min_free_kbytes > user_min_free_kbytes) {
+#ifdef CONFIG_SH_FX9750GIII
+		/* A 128 KiB floor would reserve one quarter of this 512 KiB
+		 * machine before slabs and PID 1 can run. Keep 2-4 pages for
+		 * emergency allocations while preserving explicit user choices.
+		 */
+		min_free_kbytes = clamp(new_min_free_kbytes, 8, 16);
+#else
 		min_free_kbytes = clamp(new_min_free_kbytes, 128, 262144);
-	else
+#endif
+	} else
 		pr_warn_ratelimited("min_free_kbytes is not updated to %d because user defined value %d is preferred\n",
 				    new_min_free_kbytes, user_min_free_kbytes);
 
