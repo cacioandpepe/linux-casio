@@ -1,0 +1,25 @@
+// SPDX-License-Identifier: GPL-2.0-only
+// Copyright (C) 2026 Artem Novak
+
+/ {
+	interrupt-parent = <&intc>;
+	#address-cells = <1>;
+	#size-cells = <1>;
+
+	cpus {
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		cpu@0 {
+			device_type = "cpu";
+			compatible = "renesas,sh7305";
+			reg = <0>;
+		};
+	};
+
+	intc: interrupt-controller {
+		compatible = "renesas,sh7305-intc";
+		interrupt-controller;
+		#interrupt-cells = <1>;
+	};
+};

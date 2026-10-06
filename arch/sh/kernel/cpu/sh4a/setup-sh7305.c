@@ -1,4 +1,5 @@
-// SPDX-License-Identifier: GPL-2.0
+// SPDX-License-Identifier: GPL-2.0-only
+// Copyright (C) 2026 Artem Novak
 /*
  * Renesas SH7305 CPU setup
  *
@@ -8,6 +9,7 @@
 #include <linux/init.h>
 #include <linux/io.h>
 #include <linux/ioport.h>
+#include <linux/of.h>
 #include <linux/platform_device.h>
 #include <linux/sh_timer.h>
 
@@ -157,5 +159,12 @@ static struct intc_desc intc_desc __initdata = {
 
 void __init plat_irq_setup(void)
 {
+	struct device_node *np;
+
+	np = of_find_compatible_node(NULL, NULL, "renesas,sh7305-intc");
+	intc_desc.fwnode = of_fwnode_handle(np);
+
 	register_intc_controller(&intc_desc);
+
+	of_node_put(np);
 }

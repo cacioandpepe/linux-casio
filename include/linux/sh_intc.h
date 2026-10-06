@@ -23,6 +23,8 @@
 
 typedef unsigned char intc_enum;
 
+struct fwnode_handle;
+
 struct intc_vect {
 	intc_enum enum_id;
 	unsigned short vect;
@@ -114,6 +116,7 @@ struct intc_desc {
 	char *name;
 	struct resource *resource;
 	unsigned int num_resources;
+	struct fwnode_handle *fwnode;
 	intc_enum force_enable;
 	intc_enum force_disable;
 	bool skip_syscore_suspend;
