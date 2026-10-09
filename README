@@ -5,24 +5,25 @@ powered by the Renesas SH7305 processor.
 
 Current status
 ===========================
+
 Currently the port only serves Linux as an application (.g1a). In the future, I would want to make 
 it run independently. To build the application and payloads (vmlinux and ram), I use this script
-(linux-loader-casio)[https://codeberg.org/cacioandpepe/linux-loader-casio]
-Kernel load up is partially done, right now I'm currently working on 
-(Device Tree Support)[https://docs.kernel.org/devicetree/usage-model.html] 
+[linux-loader-casio](https://codeberg.org/cacioandpepe/linux-loader-casio)
+Kernel load up is done, however right now I'm currently working on 
+[Device Tree Support](https://docs.kernel.org/devicetree/usage-model.html),
+for a full contribution
 
-The project includes SH7305 platform support, custom bootloader development, 
+The project includes SH7305 platform support, custom bootloader development,
 and experiments with memory mapping and early Linux initialization.
-A big Linux boot has not yet been demonstrated.
+A big Linux boot has not yet been implemented.
 
-To do stuff
+To do stuff:
 - Boot the Linux kernel natively
 - Improve support for the calculator hardware.
 - Reach the first userspace process.
 - Run a minimal BusyBox environment.
 
-
-
+Note: I keep scripts separate from GitHub, and i post them on Codeberg instead.
 
 Linux kernel
 ============
