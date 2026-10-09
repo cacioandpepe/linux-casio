@@ -214,6 +214,13 @@ static __init struct dma_gen_pool *__dma_atomic_pool_init(struct dma_gen_pool *d
 
 static int __init dma_atomic_pool_init(void)
 {
+#ifdef CONFIG_SH_FX9750GIII
+	/*
+	 * FX9750 bring-up: skip atomic DMA pool.
+	 * The generic pool is far too expensive for 512 KiB SRAM.
+	 */
+	return 0;
+#endif
 	int ret = 0;
 
 	/*

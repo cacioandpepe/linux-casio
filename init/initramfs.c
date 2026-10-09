@@ -9,6 +9,9 @@
 #include <linux/fs_struct.h>
 #include <linux/hex.h>
 #include <linux/init.h>
+#ifdef CONFIG_SH_FX9750GIII
+#include <asm/fx9750_boot.h>
+#endif
 #include <linux/init_syscalls.h>
 #include <linux/kstrtox.h>
 #include <linux/memblock.h>
@@ -23,10 +26,25 @@
 #include <linux/umh.h>
 #include <linux/utime.h>
 
+#ifdef CONFIG_SH_FX9750GIII
+extern void fx9750_lcd_late_stage(unsigned int stage);
+extern void fx9750_lcd_rdinit_code(int rc);
+#endif
+
 #include <asm/byteorder.h>
 
 #include "do_mounts.h"
 #include "initramfs_internal.h"
+
+#ifdef CONFIG_SH_FX9750GIII
+/*
+ * The bundled fx9750 initramfs only has tiny fixed path names.
+ * Avoid several PATH_MAX-sized early allocations.
+ */
+#define INITRAMFS_PATH_MAX 64
+#else
+#define INITRAMFS_PATH_MAX PATH_MAX
+#endif
 
 static __initdata bool csum_present;
 static __initdata u32 io_csum;
@@ -80,7 +98,7 @@ static __initdata struct hash {
 	int ino, minor, major;
 	umode_t mode;
 	struct hash *next;
-	char name[N_ALIGN(PATH_MAX)];
+	char name[N_ALIGN(INITRAMFS_PATH_MAX)];
 } *head[32];
 static __initdata bool hardlink_seen;
 
@@ -302,10 +320,10 @@ static int __init do_header(void)
 	next_header = this_header + N_ALIGN(name_len) + body_len;
 	next_header = (next_header + 3) & ~3;
 	state = SkipIt;
-	if (name_len <= 0 || name_len > PATH_MAX)
+	if (name_len <= 0 || name_len > INITRAMFS_PATH_MAX)
 		return 0;
 	if (S_ISLNK(mode)) {
-		if (body_len > PATH_MAX)
+		if (body_len > INITRAMFS_PATH_MAX)
 			return 0;
 		collect = collected = symlink_buf;
 		remains = N_ALIGN(name_len) + body_len;
@@ -369,10 +387,13 @@ static __initdata loff_t wfile_pos;
 
 static int __init do_name(void)
 {
+#ifdef CONFIG_SH_FX9750GIII
+	fx9750_lcd_late_stage(0xf0); /* do_name */
+#endif
 	state = SkipIt;
 	next_state = Reset;
 
-	/* name_len > 0 && name_len <= PATH_MAX checked in do_header */
+	/* name_len > 0 && name_len <= INITRAMFS_PATH_MAX checked in do_header */
 	if (collected[name_len - 1] != '\0') {
 		pr_err("initramfs name without nulterm: %.*s\n",
 		       (int)name_len, collected);
@@ -422,6 +443,9 @@ static int __init do_name(void)
 
 static int __init do_copy(void)
 {
+#ifdef CONFIG_SH_FX9750GIII
+	fx9750_lcd_late_stage(0xf1); /* do_copy */
+#endif
 	if (byte_count >= body_len) {
 		if (xwrite(wfile, victim, body_len, &wfile_pos) != body_len)
 			error("write error");
@@ -524,8 +548,8 @@ char * __init unpack_to_rootfs(char *buf, unsigned long len)
 	const char *compress_name;
 	struct {
 		char header[CPIO_HDRLEN];
-		char symlink[PATH_MAX + N_ALIGN(PATH_MAX) + 1];
-		char name[N_ALIGN(PATH_MAX)];
+		char symlink[INITRAMFS_PATH_MAX + N_ALIGN(INITRAMFS_PATH_MAX) + 1];
+		char name[N_ALIGN(INITRAMFS_PATH_MAX)];
 	} *bufs = kmalloc_obj(*bufs);
 
 	if (!bufs)
@@ -788,11 +812,20 @@ EXPORT_SYMBOL_GPL(wait_for_initramfs);
 
 static int __init populate_rootfs(void)
 {
+#ifdef CONFIG_SH_FX9750GIII
+	fx9750_lcd_late_stage(0xe0);
+#endif
 	initramfs_cookie = async_schedule_domain(do_populate_rootfs, NULL,
 						 &initramfs_domain);
+#ifdef CONFIG_SH_FX9750GIII
+	fx9750_lcd_late_stage(0xe1);
+#endif
 	usermodehelper_enable();
 	if (!initramfs_async)
 		wait_for_initramfs();
+#ifdef CONFIG_SH_FX9750GIII
+	fx9750_lcd_late_stage(0xe2);
+#endif
 	return 0;
 }
 rootfs_initcall(populate_rootfs);

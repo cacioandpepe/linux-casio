@@ -30,6 +30,7 @@
 #include <linux/memblock.h>
 #include <linux/of.h>
 #include <linux/of_fdt.h>
+#include <linux/libfdt.h>
 #include <linux/uaccess.h>
 #include <uapi/linux/mount.h>
 #include <asm/io.h>
@@ -256,13 +257,50 @@ void __ref sh_fdt_init(phys_addr_t dt_phys)
 	dt_virt = phys_to_virt(dt_phys);
 #endif
 
-	if (!dt_virt || !early_init_dt_scan(dt_virt, __pa(dt_virt))) {
-		pr_crit("Error: invalid device tree blob"
-			" at physical address %p\n", (void *)dt_phys);
-
+#ifdef CONFIG_SH_FX9750GIII
+	if (!dt_virt) {
+		fx9750_lcd_fault(0, 0xffffffffUL);
 		while (true)
 			cpu_relax();
 	}
+
+	{
+		int fdt_rc = fdt_check_header(dt_virt);
+
+		fx9750_lcd_fault((unsigned long)dt_virt,
+				     (unsigned long)fdt_rc);
+
+		if (fdt_rc)
+			while (true)
+				cpu_relax();
+	}
+
+	/* About to run Linux's full early FDT verification. */
+	fx9750_lcd_fault((unsigned long)dt_virt, 0xf0d00001UL);
+#endif
+
+	if (!early_init_dt_verify(dt_virt, __pa(dt_virt))) {
+#ifdef CONFIG_SH_FX9750GIII
+		fx9750_lcd_fault((unsigned long)dt_virt, 0xf0d0bad1UL);
+#endif
+		while (true)
+			cpu_relax();
+	}
+
+#ifdef CONFIG_SH_FX9750GIII
+	/* Header + full early verification completed. */
+	fx9750_lcd_fault((unsigned long)dt_virt, 0xf0d00002UL);
+#endif
+
+	/*
+	 * Now scan root, /chosen and memory nodes.
+	 * If this does not return, the fault is in the node-scan path.
+	 */
+	early_init_dt_scan_nodes();
+
+#ifdef CONFIG_SH_FX9750GIII
+	fx9750_lcd_fault((unsigned long)dt_virt, 0xf0d00003UL);
+#endif
 
 	done = 1;
 }

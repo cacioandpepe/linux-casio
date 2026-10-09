@@ -16,6 +16,9 @@
 
 #include <linux/stddef.h>
 #include <linux/mm.h>
+#ifdef CONFIG_SH_FX9750GIII
+#include <asm/fx9750_boot.h>
+#endif
 #include <linux/highmem.h>
 #include <linux/interrupt.h>
 #include <linux/jiffies.h>
@@ -272,7 +275,12 @@ const char * const migratetype_names[MIGRATE_TYPES] = {
 #endif
 };
 
+#ifdef CONFIG_SH_FX9750GIII
+/* FX9750 has only 512 KiB of SRAM; every order-0 page matters. */
+int min_free_kbytes = 0;
+#else
 int min_free_kbytes = 1024;
+#endif
 int user_min_free_kbytes = -1;
 static int watermark_boost_factor __read_mostly = 15000;
 static int watermark_scale_factor = 10;
@@ -5027,7 +5035,13 @@ retry:
 		goto restart;
 
 	/* Reclaim has failed us, start killing things */
+	#ifdef CONFIG_SH_FX9750GIII
+	fx9750_lcd_late_stage(0xb0);
+	#endif
 	page = __alloc_pages_may_oom(gfp_mask, order, ac, &did_some_progress);
+	#ifdef CONFIG_SH_FX9750GIII
+	fx9750_lcd_late_stage(0xb1);
+	#endif
 	if (page)
 		goto got_pg;
 
@@ -5082,6 +5096,9 @@ nopage:
 		goto retry;
 	}
 fail:
+	#ifdef CONFIG_SH_FX9750GIII
+	fx9750_lcd_late_stage(0xb2);
+	#endif
 	warn_alloc(gfp_mask, ac->nodemask,
 			"page allocation failure: order:%u", order);
 got_pg:

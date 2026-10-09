@@ -20,6 +20,9 @@
 
 #include <linux/oom.h>
 #include <linux/mm.h>
+#ifdef CONFIG_SH_FX9750GIII
+#include <asm/fx9750_boot.h>
+#endif
 #include <linux/err.h>
 #include <linux/gfp.h>
 #include <linux/sched.h>
@@ -1073,6 +1076,9 @@ static void check_panic_on_oom(struct oom_control *oc)
 	if (is_sysrq_oom(oc))
 		return;
 	dump_header(oc);
+	#ifdef CONFIG_SH_FX9750GIII
+	fx9750_lcd_late_stage(0xb4);
+	#endif
 	panic("Out of memory: %s panic_on_oom is enabled\n",
 		sysctl_panic_on_oom == 2 ? "compulsory" : "system-wide");
 }
@@ -1103,6 +1109,10 @@ EXPORT_SYMBOL_GPL(unregister_oom_notifier);
 bool out_of_memory(struct oom_control *oc)
 {
 	unsigned long freed = 0;
+
+	#ifdef CONFIG_SH_FX9750GIII
+	fx9750_lcd_late_stage(0xb3);
+	#endif
 
 	if (oom_killer_disabled)
 		return false;
@@ -1155,6 +1165,13 @@ bool out_of_memory(struct oom_control *oc)
 	select_bad_process(oc);
 	/* Found nothing?!?! */
 	if (!oc->chosen) {
+		#ifdef CONFIG_SH_FX9750GIII
+		fx9750_lcd_oom_snapshot(
+            (unsigned long)oc->order,
+            (unsigned long)oc->gfp_mask,
+            (unsigned long)nr_free_pages(),
+            (unsigned long)current->pid);
+		#endif
 		dump_header(oc);
 		pr_warn("Out of memory and no killable processes...\n");
 		/*

@@ -16,7 +16,7 @@
 #define SH7305_BOOT_REPAIR_PHYS    0x08068000UL
 #define SH7305_BOOT_REPAIR_SIZE    0x00008000UL
 #define SH7305_BOOT_REPAIR_EXTRA_PHYS 0x08056000UL
-#define SH7305_BOOT_REPAIR_EXTRA_SIZE 0x00008000UL
+#define SH7305_BOOT_REPAIR_EXTRA_SIZE 0x00005000UL
 #define SH7305_BOOT_FLASH_FIRST    0x00400000UL
 #define SH7305_BOOT_FLASH_END      0x00800000UL
 
@@ -55,4 +55,17 @@ void fx9750_lcd_console_init(void);
 void fx9750_update_tlb_1k(unsigned long address, unsigned long phys);
 #endif
 
+#ifdef CONFIG_SH_FX9750GIII
+void fx9750_lcd_late_stage(unsigned stage);
+void fx9750_lcd_panic_checkpoint(const char *reason);
+void fx9750_lcd_first_oops(unsigned long pc, unsigned long pr, unsigned long tea, unsigned long sp, unsigned long err);
+#endif
+
+#endif
+
+#ifdef CONFIG_SH_FX9750GIII
+void fx9750_lcd_oom_snapshot(unsigned long order,
+                            unsigned long gfp,
+                            unsigned long free_pages,
+                            unsigned long pid);
 #endif

@@ -9,6 +9,9 @@
  * This function is used through-out the kernel (including mm and fs)
  * to indicate a major problem.
  */
+#ifdef CONFIG_SH_FX9750GIII
+#include <asm/fx9750_boot.h>
+#endif
 #include <linux/debug_locks.h>
 #include <linux/sched/debug.h>
 #include <linux/interrupt.h>
@@ -633,6 +636,10 @@ void vpanic(const char *fmt, va_list args)
 	console_verbose();
 	bust_spinlocks(1);
 	len = vscnprintf(buf, sizeof(buf), fmt, args);
+#ifdef CONFIG_SH_FX9750GIII
+    fx9750_lcd_panic_checkpoint(buf);
+#endif
+
 
 	if (len && buf[len - 1] == '\n')
 		buf[len - 1] = '\0';
@@ -888,6 +895,9 @@ static __init int alloc_taint_buf(void)
 	buf = kmalloc(size, GFP_KERNEL);
 
 	if (!buf) {
+		#ifdef CONFIG_SH_FX9750GIII
+		fx9750_lcd_late_stage(0xb7);
+		#endif
 		panic("Failed to allocate taint string buffer");
 	}
 

@@ -19,11 +19,24 @@
 #include <asm/ftrace.h>
 #include <asm/unwinder.h>
 #include <asm/traps.h>
+#ifdef CONFIG_SH_FX9750GIII
+#include <asm/fx9750_boot.h>
+#include <asm/mmu.h>
+#include <asm/mmu_context.h>
+#endif
 
 static DEFINE_SPINLOCK(die_lock);
 
 void __noreturn die(const char *str, struct pt_regs *regs, long err)
 {
+
+#ifdef CONFIG_SH_FX9750GIII
+    fx9750_lcd_first_oops(
+        regs->pc, regs->pr,
+        __raw_readl(MMU_TEA),
+        regs->regs[15], (unsigned long)err);
+#endif
+
 	static int die_counter;
 
 	oops_enter();

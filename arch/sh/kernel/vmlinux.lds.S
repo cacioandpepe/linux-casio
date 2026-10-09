@@ -106,9 +106,22 @@ SECTIONS
 		_etext = .;
 	} = 0x0009
 
-	EXCEPTION_TABLE(16)
+
+	/*
+	 * P3 is flash-backed from first entry.  Generic RO_DATA()
+	 * normally includes .data..ro_after_init, but those objects are
+	 * still writable during early boot.  Emit them later in P1 RAM.
+	 */
+#undef RO_AFTER_INIT_DATA
+#define RO_AFTER_INIT_DATA
 
 	RO_DATA(PAGE_SIZE)
+
+	/*
+	 * Init code is executable but read-only.  Keep it in the
+	 * flash-backed P3 mapping rather than consuming scarce P1 SRAM.
+	 */
+	INIT_TEXT_SECTION(PAGE_SIZE)
 
 	DWARF_EH_FRAME
 
@@ -137,7 +150,10 @@ SECTIONS
 
 	__init_begin = .;
 
-	INIT_TEXT_SECTION(PAGE_SIZE)
+	/*
+	 * Writable init state must remain in SRAM.
+	 * .init.text is emitted in P3 above.
+	 */
 	INIT_DATA_SECTION(16)
 
 	. = ALIGN(4);
@@ -167,6 +183,25 @@ SECTIONS
 	 * --------------------------------------------------------- */
 
 	_sdata = .;
+
+	/*
+	 * Writable during boot, logically read-only after init.
+	 * This must not be placed in the immutable P3 backing.
+	 */
+	. = ALIGN(8);
+	.data..ro_after_init : AT(ADDR(.data..ro_after_init)) {
+		__start_ro_after_init = .;
+		*(.data..ro_after_init)
+		JUMP_TABLE_DATA
+		STATIC_CALL_DATA
+		__end_ro_after_init = .;
+	}
+
+	/*
+	 * SH7305: exception-table sorting writes to this table.
+	 * Keep it in permanent P1 RAM, never flash-backed P3.
+	 */
+	EXCEPTION_TABLE(16)
 
 	RW_DATA(L1_CACHE_BYTES, PAGE_SIZE, THREAD_SIZE)
 

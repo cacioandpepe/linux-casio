@@ -29,6 +29,9 @@
 
 #include <asm/setup.h>  /* for COMMAND_LINE_SIZE */
 #include <asm/page.h>
+#ifdef CONFIG_SH_FX9750GIII
+#include <asm/fx9750_boot.h>
+#endif
 
 #include "of_private.h"
 
@@ -1205,25 +1208,53 @@ static void * __init early_init_dt_alloc_memory_arch(u64 size, u64 align)
 
 bool __init early_init_dt_verify(void *dt_virt, phys_addr_t dt_phys)
 {
+#ifdef CONFIG_SH_FX9750GIII
+	fx9750_lcd_fault((unsigned long)dt_virt, 0xf0d10001UL);
+#endif
+
 	if (!dt_virt)
 		return false;
 
-	/* check device tree validity */
 	if (fdt_check_header(dt_virt))
 		return false;
 
-	/* Setup flat device-tree pointer */
+#ifdef CONFIG_SH_FX9750GIII
+	/* Header check completed inside early_init_dt_verify(). */
+	fx9750_lcd_fault((unsigned long)dt_virt, 0xf0d10002UL);
+#endif
+
 	initial_boot_params = dt_virt;
 	initial_boot_params_pa = dt_phys;
-	of_fdt_crc32 = crc32_be(~0, initial_boot_params,
-				fdt_totalsize(initial_boot_params));
 
-	/* Initialize {size,address}-cells info */
+#ifdef CONFIG_SH_FX9750GIII
+	/* Pointer globals stored successfully. */
+	fx9750_lcd_fault((unsigned long)dt_virt, 0xf0d10003UL);
+
+	/* Show the size that crc32_be() is about to read. */
+	fx9750_lcd_fault((unsigned long)dt_virt,
+			 (unsigned long)fdt_totalsize(initial_boot_params));
+
+	/* Next call is the most interesting suspect. */
+	fx9750_lcd_fault((unsigned long)dt_virt, 0xf0d10004UL);
+#endif
+
+	of_fdt_crc32 = crc32_be(~0, initial_boot_params,
+			       fdt_totalsize(initial_boot_params));
+
+#ifdef CONFIG_SH_FX9750GIII
+	/* CRC32 completed. */
+	fx9750_lcd_fault((unsigned long)dt_virt, 0xf0d10005UL);
+#endif
+
 	early_init_dt_scan_root();
+
+#ifdef CONFIG_SH_FX9750GIII
+	/* Root #address-cells/#size-cells scan completed. */
+	fx9750_lcd_fault((unsigned long)dt_virt, 0xf0d10006UL);
+#endif
 
 	return true;
 }
-
 
 void __init early_init_dt_scan_nodes(void)
 {

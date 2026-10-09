@@ -19,6 +19,11 @@
 #include <linux/proc_fs.h>
 #include <linux/binfmts.h>
 #include <linux/kernel.h>
+#ifdef CONFIG_SH_FX9750GIII
+extern void fx9750_lcd_late_stage(unsigned int stage);
+extern void fx9750_lcd_rdinit_code(int rc);
+#endif
+
 #include <linux/syscalls.h>
 #include <linux/stackprotector.h>
 #include <linux/string.h>
@@ -688,13 +693,25 @@ static noinline void __ref __noreturn rest_init(void)
 	struct task_struct *tsk;
 	int pid;
 
+#ifdef CONFIG_SH_FX9750GIII
+	fx9750_lcd_late_stage(0x91);
+#endif
 	rcu_scheduler_starting();
+#ifdef CONFIG_SH_FX9750GIII
+	fx9750_lcd_late_stage(0x92);
+#endif
 	/*
 	 * We need to spawn init first so that it obtains pid 1, however
 	 * the init task will end up wanting to create kthreads, which, if
 	 * we schedule it before we create kthreadd, will OOPS.
 	 */
+#ifdef CONFIG_SH_FX9750GIII
+	fx9750_lcd_late_stage(0x93);
+#endif
 	pid = kernel_clone(&init_args);
+#ifdef CONFIG_SH_FX9750GIII
+	fx9750_lcd_late_stage(0x94);
+#endif
 	/*
 	 * Pin init on the boot CPU. Task migration is not properly working
 	 * until sched_init_smp() has been run. It will set the allowed
@@ -704,12 +721,24 @@ static noinline void __ref __noreturn rest_init(void)
 	tsk = find_task_by_pid_ns(pid, &init_pid_ns);
 	tsk->flags |= PF_NO_SETAFFINITY;
 	set_cpus_allowed_ptr(tsk, cpumask_of(smp_processor_id()));
+#ifdef CONFIG_SH_FX9750GIII
+	fx9750_lcd_late_stage(0x95);
+#endif
 	rcu_read_unlock();
 
 	numa_default_policy();
+#ifdef CONFIG_SH_FX9750GIII
+	fx9750_lcd_late_stage(0x96);
+#endif
 	pid = kernel_thread(kthreadd, NULL, NULL, CLONE_FS | CLONE_FILES);
+#ifdef CONFIG_SH_FX9750GIII
+	fx9750_lcd_late_stage(0x97);
+#endif
 	rcu_read_lock();
 	kthreadd_task = find_task_by_pid_ns(pid, &init_pid_ns);
+#ifdef CONFIG_SH_FX9750GIII
+	fx9750_lcd_late_stage(0x98);
+#endif
 	rcu_read_unlock();
 
 	/*
@@ -722,13 +751,25 @@ static noinline void __ref __noreturn rest_init(void)
 	system_state = SYSTEM_SCHEDULING;
 
 	complete(&kthreadd_done);
+#ifdef CONFIG_SH_FX9750GIII
+	fx9750_lcd_late_stage(0x99);
+#endif
 
 	/*
 	 * The boot idle thread must execute schedule()
 	 * at least once to get things moving:
 	 */
+#ifdef CONFIG_SH_FX9750GIII
+	fx9750_lcd_late_stage(0x9a);
+#endif
 	schedule_preempt_disabled();
+#ifdef CONFIG_SH_FX9750GIII
+	fx9750_lcd_late_stage(0x9b);
+#endif
 	/* Call into cpu_idle with preempt disabled */
+#ifdef CONFIG_SH_FX9750GIII
+	fx9750_lcd_late_stage(0x9c);
+#endif
 	cpu_startup_entry(CPUHP_ONLINE);
 }
 
@@ -1170,23 +1211,72 @@ void start_kernel(void)
 	dbg_late_init();
 	net_ns_init();
 	vfs_caches_init();
+#ifdef CONFIG_SH_FX9750GIII
+	fx9750_lcd_late_stage(0x70);
+#endif
 	pagecache_init();
+#ifdef CONFIG_SH_FX9750GIII
+	fx9750_lcd_late_stage(0x72);
+#endif
 	signals_init();
+#ifdef CONFIG_SH_FX9750GIII
+	fx9750_lcd_late_stage(0x73);
+#endif
 	seq_file_init();
+#ifdef CONFIG_SH_FX9750GIII
+	fx9750_lcd_late_stage(0x74);
+#endif
 	proc_root_init();
+#ifdef CONFIG_SH_FX9750GIII
+	fx9750_lcd_late_stage(0x75);
+#endif
 	nsfs_init();
+#ifdef CONFIG_SH_FX9750GIII
+	fx9750_lcd_late_stage(0x76);
+#endif
 	pidfs_init();
+#ifdef CONFIG_SH_FX9750GIII
+	fx9750_lcd_late_stage(0x77);
+#endif
 	cpuset_init();
+#ifdef CONFIG_SH_FX9750GIII
+	fx9750_lcd_late_stage(0x78);
+#endif
 	mem_cgroup_init();
+#ifdef CONFIG_SH_FX9750GIII
+	fx9750_lcd_late_stage(0x79);
+#endif
 	cgroup_init();
+#ifdef CONFIG_SH_FX9750GIII
+	fx9750_lcd_late_stage(0x7a);
+#endif
 	taskstats_init_early();
+#ifdef CONFIG_SH_FX9750GIII
+	fx9750_lcd_late_stage(0x7b);
+#endif
 	delayacct_init();
+#ifdef CONFIG_SH_FX9750GIII
+	fx9750_lcd_late_stage(0x7c);
+#endif
 
 	acpi_subsystem_init();
+#ifdef CONFIG_SH_FX9750GIII
+	fx9750_lcd_late_stage(0x7d);
+#endif
 	arch_post_acpi_subsys_init();
+#ifdef CONFIG_SH_FX9750GIII
+	fx9750_lcd_late_stage(0x7e);
+#endif
 	kcsan_init();
+#ifdef CONFIG_SH_FX9750GIII
+	fx9750_lcd_late_stage(0x7f);
+#endif
 
 	/* Do the rest non-__init'ed, we're now alive */
+#ifdef CONFIG_SH_FX9750GIII
+	fx9750_lcd_late_stage(0x71);
+	fx9750_lcd_late_stage(0x90);
+#endif
 	rest_init();
 
 	/*
@@ -1420,23 +1510,42 @@ static void __init do_initcall_level(int level, char *command_line)
 		   NULL, ignore_unknown_bootoption);
 
 	do_trace_initcall_level(initcall_level_names[level]);
-	for (fn = initcall_levels[level]; fn < initcall_levels[level+1]; fn++)
+	for (fn = initcall_levels[level]; fn < initcall_levels[level+1]; fn++) {
+#ifdef CONFIG_SH_FX9750GIII
+		/* FX9750_FS_INITCALL_TRACE */
+		if (level == 5) {
+			unsigned int index =
+				(unsigned int)(fn - initcall_levels[level]);
+			fx9750_lcd_late_stage(
+				index < 64 ? 0xc0 + index : 0xff);
+		}
+#endif
 		do_one_initcall(initcall_from_entry(fn));
+	}
 }
 
 static void __init do_initcalls(void)
 {
+#ifdef CONFIG_SH_FX9750GIII
+	fx9750_lcd_late_stage(0xa8);
+#endif
 	int level;
 	size_t len = saved_command_line_len + 1;
 	char *command_line;
 
 	command_line = kzalloc(len, GFP_KERNEL);
+#ifdef CONFIG_SH_FX9750GIII
+	fx9750_lcd_late_stage(0xa9);
+#endif
 	if (!command_line)
 		panic("%s: Failed to allocate %zu bytes\n", __func__, len);
 
 	for (level = 0; level < ARRAY_SIZE(initcall_levels) - 1; level++) {
 		/* Parser modifies command_line, restore it each time */
 		strcpy(command_line, saved_command_line);
+#ifdef CONFIG_SH_FX9750GIII
+		fx9750_lcd_late_stage(0xe8 + level);
+#endif
 		do_initcall_level(level, command_line);
 	}
 
@@ -1452,12 +1561,37 @@ static void __init do_initcalls(void)
  */
 static void __init do_basic_setup(void)
 {
+	/* FX9750_BASIC_SETUP_TRACE_V2 */
+#ifdef CONFIG_SH_FX9750GIII
+	fx9750_lcd_late_stage(0xa0);
+#endif
 	cpuset_init_smp();
+#ifdef CONFIG_SH_FX9750GIII
+	fx9750_lcd_late_stage(0xa1);
+#endif
 	ksysfs_init();
+#ifdef CONFIG_SH_FX9750GIII
+	fx9750_lcd_late_stage(0xa2);
+#endif
 	driver_init();
+#ifdef CONFIG_SH_FX9750GIII
+	fx9750_lcd_late_stage(0xa3);
+#endif
 	init_irq_proc();
+#ifdef CONFIG_SH_FX9750GIII
+	fx9750_lcd_late_stage(0xa4);
+#endif
 	do_ctors();
+#ifdef CONFIG_SH_FX9750GIII
+	fx9750_lcd_late_stage(0xa5);
+#endif
+#ifdef CONFIG_SH_FX9750GIII
+	fx9750_lcd_late_stage(0xa6);
+#endif
 	do_initcalls();
+#ifdef CONFIG_SH_FX9750GIII
+	fx9750_lcd_late_stage(0xa7);
+#endif
 }
 
 static void __init do_pre_smp_initcalls(void)
@@ -1554,24 +1688,54 @@ void __weak free_initmem(void)
 static int __ref kernel_init(void *unused)
 {
 	int ret;
+#ifdef CONFIG_SH_FX9750GIII
+	fx9750_lcd_late_stage(0xa0);
+#endif
 
 	init_userspace_fs();
 
 	/*
 	 * Wait until kthreadd is all set-up.
 	 */
+#ifdef CONFIG_SH_FX9750GIII
+	fx9750_lcd_late_stage(0xa1);
+#endif
 	wait_for_completion(&kthreadd_done);
+#ifdef CONFIG_SH_FX9750GIII
+	fx9750_lcd_late_stage(0xa2);
+#endif
 
+#ifdef CONFIG_SH_FX9750GIII
+	fx9750_lcd_late_stage(0xa3);
+#endif
 	kernel_init_freeable();
+#ifdef CONFIG_SH_FX9750GIII
+	fx9750_lcd_late_stage(0xa4);
+#endif
+#ifdef CONFIG_SH_FX9750GIII
+	fx9750_lcd_late_stage(0xd3);
+#endif
 	/* need to finish all async __init code before freeing the memory */
+#ifdef CONFIG_SH_FX9750GIII
+	fx9750_lcd_late_stage(0xd4);
+#endif
 	async_synchronize_full();
+#ifdef CONFIG_SH_FX9750GIII
+	fx9750_lcd_late_stage(0xd5);
+#endif
 
 	system_state = SYSTEM_FREEING_INITMEM;
 	kprobe_free_init_mem();
 	ftrace_free_init_mem();
 	kgdb_free_init_mem();
 	exit_boot_config();
+#ifdef CONFIG_SH_FX9750GIII
+	fx9750_lcd_late_stage(0xd6);
+#endif
 	free_initmem();
+#ifdef CONFIG_SH_FX9750GIII
+	fx9750_lcd_late_stage(0xd7);
+#endif
 	mark_readonly();
 
 	/*
@@ -1588,6 +1752,9 @@ static int __ref kernel_init(void *unused)
 	do_sysctl_args();
 
 	if (ramdisk_execute_command) {
+#ifdef CONFIG_SH_FX9750GIII
+		fx9750_lcd_late_stage(0xd8);
+#endif
 		ret = run_init_process(ramdisk_execute_command);
 		if (!ret)
 			return 0;
@@ -1646,45 +1813,101 @@ void __init console_on_rootfs(void)
 static noinline void __init kernel_init_freeable(void)
 {
 	/* Now the scheduler is fully set up and can do blocking allocations */
+#ifdef CONFIG_SH_FX9750GIII
+	fx9750_lcd_late_stage(0xa5);
+#endif
 	gfp_allowed_mask = __GFP_BITS_MASK;
 
 	/*
 	 * init can allocate pages on any node
 	 */
 	set_mems_allowed(node_states[N_MEMORY]);
+#ifdef CONFIG_SH_FX9750GIII
+	fx9750_lcd_late_stage(0x80);
+#endif
 
 	rcu_assign_pointer(cad_pid, get_pid(task_pid(current)));
 
 	smp_prepare_cpus(setup_max_cpus);
+#ifdef CONFIG_SH_FX9750GIII
+	fx9750_lcd_late_stage(0x81);
+#endif
 
 	workqueue_init();
+#ifdef CONFIG_SH_FX9750GIII
+	fx9750_lcd_late_stage(0x82);
+#endif
 
 	init_mm_internals();
+#ifdef CONFIG_SH_FX9750GIII
+	fx9750_lcd_late_stage(0x83);
+#endif
 
 	do_pre_smp_initcalls();
+#ifdef CONFIG_SH_FX9750GIII
+	fx9750_lcd_late_stage(0x85);
+#endif
 	lockup_detector_init();
+#ifdef CONFIG_SH_FX9750GIII
+	fx9750_lcd_late_stage(0x86);
+#endif
 
 	smp_init();
+#ifdef CONFIG_SH_FX9750GIII
+	fx9750_lcd_late_stage(0x87);
+#endif
 	sched_init_smp();
+#ifdef CONFIG_SH_FX9750GIII
+	fx9750_lcd_late_stage(0x88);
+#endif
 
 	workqueue_init_topology();
 	async_init();
 	padata_init();
+#ifdef CONFIG_SH_FX9750GIII
+	fx9750_lcd_late_stage(0x89);
+#endif
 	page_alloc_init_late();
+#ifdef CONFIG_SH_FX9750GIII
+	fx9750_lcd_late_stage(0x8a);
+#endif
 
 	do_basic_setup();
+#ifdef CONFIG_SH_FX9750GIII
+	fx9750_lcd_late_stage(0x8c);
+#endif
 
 	kunit_run_all_tests();
+#ifdef CONFIG_SH_FX9750GIII
+	fx9750_lcd_late_stage(0x8d);
+#endif
 
 	wait_for_initramfs();
+#ifdef CONFIG_SH_FX9750GIII
+	fx9750_lcd_late_stage(0x8e);
+#endif
 	console_on_rootfs();
+#ifdef CONFIG_SH_FX9750GIII
+	fx9750_lcd_late_stage(0x8f);
+#endif
 
 	/*
 	 * check if there is an early userspace init.  If yes, let it do all
 	 * the work
 	 */
 	int ramdisk_command_access;
+#ifdef CONFIG_SH_FX9750GIII
+	fx9750_lcd_late_stage(0xd0);
+#endif
 	ramdisk_command_access = init_eaccess(ramdisk_execute_command);
+#ifdef CONFIG_SH_FX9750GIII
+	fx9750_lcd_late_stage(0xd1);
+#endif
+
+#ifdef CONFIG_SH_FX9750GIII
+	fx9750_lcd_rdinit_code(ramdisk_command_access);
+	fx9750_lcd_late_stage(0xd2);
+#endif
 	if (ramdisk_command_access != 0) {
 		if (ramdisk_execute_command_set)
 			pr_warn("check access for rdinit=%s failed: %i, ignoring\n",

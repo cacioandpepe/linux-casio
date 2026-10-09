@@ -4,6 +4,7 @@
  * driver; the loader passes the selected hardware version in bootinfo.
  */
 #include <linux/console.h>
+#include <linux/swap.h>
 #include <linux/init.h>
 #include <linux/types.h>
 #include <asm/fx9750_boot.h>
@@ -183,11 +184,167 @@ static LCD_FN void lcd_string(const char *s)
     while(*s) lcd_putc(*s++);
 }
 
+static volatile unsigned fx9750_last_stage;
+static volatile unsigned fx9750_panic_frozen;
+
 void LCD_FN fx9750_lcd_stage(unsigned stage)
 {
+    if (fx9750_panic_frozen)
+        return;
+    fx9750_last_stage = stage;
+
     lcd_string(stage == 1 ? ram_entry : cpu_ready);
     lcd_flush();
 }
+
+
+/*
+ * Minimal late-boot diagnostics for fx-9750GIII bring-up.
+ * Keep this independent of the normal printk console so it remains
+ * useful during allocator/init failures.
+ */
+static LCD_FN void fx9750_lcd_debug_clear(void)
+{
+    for (unsigned y = 0; y < 64; y++)
+        for (unsigned x = 0; x < 16; x++)
+            lcd_pixels[y][x] = 0;
+
+    lcd_row = 0;
+    lcd_col = 0;
+}
+
+static LCD_FN void fx9750_lcd_debug_hex32(unsigned long value)
+{
+    for (int i = 7; i >= 0; i--)
+        lcd_putc(hex_digits[(value >> (i * 4)) & 0xf]);
+}
+
+
+/* FX9750 OOM PROGRESS SNAPSHOT */
+static volatile unsigned long fx9750_progress_stage;
+static volatile unsigned long fx9750_progress_free;
+
+void LCD_FN fx9750_lcd_late_stage(unsigned stage)
+{
+    /*
+     * Remember normal boot progress, excluding allocator/OOM
+     * checkpoints B0-B7. This performs no allocation.
+     */
+    if (stage >= 0x70 &&
+        (stage < 0xb0 || stage > 0xb7)) {
+        fx9750_progress_stage = stage;
+        fx9750_progress_free = nr_free_pages();
+    }
+
+
+    if (fx9750_panic_frozen)
+        return;
+    fx9750_last_stage = stage;
+
+    fx9750_lcd_debug_clear();
+
+    lcd_string("LATE ");
+    lcd_putc(hex_digits[(stage >> 4) & 0xf]);
+    lcd_putc(hex_digits[stage & 0xf]);
+    lcd_putc('\n');
+
+    lcd_flush();
+}
+
+
+/* Emergency LCD diagnostic: no allocations or printk. */
+void LCD_FN fx9750_lcd_panic_checkpoint(const char *reason)
+{
+    if (fx9750_panic_frozen)
+        return;
+
+    unsigned int i;
+
+    fx9750_panic_frozen = 1;
+    fx9750_lcd_debug_clear();
+
+    lcd_string("KERNEL PANIC\n");
+    lcd_string("LAST ");
+    lcd_putc(hex_digits[(fx9750_last_stage >> 4) & 15]);
+    lcd_putc(hex_digits[fx9750_last_stage & 15]);
+    lcd_putc('\n');
+
+    lcd_string("REASON\n");
+    if (reason) {
+        for (i = 0; i < 60 && reason[i]; i++) {
+            if (reason[i] == '\n')
+                break;
+            lcd_putc((unsigned char)reason[i]);
+        }
+    }
+
+    lcd_flush();
+}
+
+
+/* First fatal SuperH exception: preserve registers on LCD. */
+void LCD_FN fx9750_lcd_first_oops(
+    unsigned long pc, unsigned long pr,
+    unsigned long tea, unsigned long sp,
+    unsigned long err)
+{
+    if (fx9750_panic_frozen)
+        return;
+
+    fx9750_panic_frozen = 1;
+    fx9750_lcd_debug_clear();
+
+    lcd_string("SH FIRST OOPS\n");
+    lcd_string("LAST ");
+    lcd_putc(hex_digits[(fx9750_last_stage >> 4) & 15]);
+    lcd_putc(hex_digits[fx9750_last_stage & 15]);
+    lcd_putc('\n');
+
+    lcd_string("PC  ");
+    fx9750_lcd_debug_hex32(pc);
+    lcd_putc('\n');
+
+    lcd_string("PR  ");
+    fx9750_lcd_debug_hex32(pr);
+    lcd_putc('\n');
+
+    lcd_string("TEA ");
+    fx9750_lcd_debug_hex32(tea);
+    lcd_putc('\n');
+
+    lcd_string("SP  ");
+    fx9750_lcd_debug_hex32(sp);
+    lcd_putc('\n');
+
+    lcd_string("ERR ");
+    fx9750_lcd_debug_hex32(err);
+    lcd_putc('\n');
+
+    lcd_flush();
+}
+
+void LCD_FN fx9750_lcd_rdinit_code(int rc)
+{
+    fx9750_lcd_debug_clear();
+
+    lcd_string("RDINIT CHECK\n");
+    lcd_string("/init\n");
+
+    if (rc == 0) {
+        lcd_string("RC 0 OK\n");
+    } else if (rc == -2) {
+        lcd_string("RC -2 ENOENT\n");
+    } else if (rc == -13) {
+        lcd_string("RC -13 EACCES\n");
+    } else {
+        lcd_string("RC ");
+        fx9750_lcd_debug_hex32((unsigned long)rc);
+        lcd_putc('\n');
+    }
+
+    lcd_flush();
+}
+
 
 void LCD_FN fx9750_lcd_fault(unsigned long address, unsigned long physical)
 {
@@ -204,6 +361,9 @@ void LCD_FN fx9750_lcd_fault(unsigned long address, unsigned long physical)
 static void fx9750_console_write(struct console *con, const char *s,
                                 unsigned count)
 {
+    if (fx9750_panic_frozen)
+        return;
+
     while(count--) lcd_putc(*s++);
     lcd_flush();
 }
@@ -218,4 +378,52 @@ static struct console fx9750_console = {
 void __init fx9750_lcd_console_init(void)
 {
     register_console(&fx9750_console);
+}
+
+
+/* FX9750: nonallocating LCD snapshot for fatal system OOM. */
+static LCD_FN void fx9750_oom_hex32(unsigned long value)
+{
+    int i;
+
+    for (i = 7; i >= 0; --i)
+        lcd_putc(hex_digits[(value >> (i * 4)) & 15]);
+}
+
+void LCD_FN fx9750_lcd_oom_snapshot(unsigned long order,
+                                    unsigned long gfp,
+                                    unsigned long free_pages,
+                                    unsigned long pid)
+{
+    fx9750_lcd_debug_clear();
+
+    lcd_string("OOM NO VICTIM\n");
+    lcd_string("ORDER ");
+    fx9750_oom_hex32(order);
+    lcd_putc('\n');
+
+    lcd_string("GFP   ");
+    fx9750_oom_hex32(gfp);
+    lcd_putc('\n');
+
+    lcd_string("FREE  ");
+    fx9750_oom_hex32(free_pages);
+    lcd_putc('\n');
+
+    lcd_string("PID   ");
+    fx9750_oom_hex32(pid);
+    lcd_putc('\n');
+
+    lcd_string("LAST  ");
+    fx9750_oom_hex32(fx9750_progress_stage);
+    lcd_putc('\n');
+
+    lcd_string("AT    ");
+    fx9750_oom_hex32(fx9750_progress_free);
+    lcd_putc('\n');
+
+    lcd_flush();
+
+    /* Keep the later panic handler from replacing the snapshot. */
+    fx9750_panic_frozen = 1;
 }
