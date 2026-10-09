@@ -7,15 +7,18 @@ Current status
 ===========================
 
 Currently the port only serves Linux as an application (.g1a). In the future, I would want to make 
-it run independently. To build the application and payloads (vmlinux and ram), I use this script
-[linux-loader-casio](https://codeberg.org/cacioandpepe/linux-loader-casio)
+it run independently. To build the application and payloads (vmlinux and ram), I use this script that I've made:
+https://codeberg.org/cacioandpepe/linux-loader-casio
+
 Kernel load up is done, however right now I'm currently working on 
-[Device Tree Support](https://docs.kernel.org/devicetree/usage-model.html),
-for a full contribution
+Device Tree Support, for a full contribution.
 
 The project includes SH7305 platform support, custom bootloader development,
 and experiments with memory mapping and early Linux initialization.
 A big Linux boot has not yet been implemented.
+
+To contribute I'm about 80-90% done, currently I'm posting small patches
+that surely work through tests.
 
 To do stuff:
 - Boot the Linux kernel natively
