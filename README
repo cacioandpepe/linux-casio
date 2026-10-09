@@ -1,10 +1,11 @@
-Linux on the Casio fx-9750GIII
+Linux on the Casio hardware
 
-Linux kernel port for the Casio fx-9750GIII graphing calculator, 
-powered by the Renesas SH7305 processor.
+Linux kernel port for the Casio devices. 
 
 Current status
 ===========================
+
+FX-9750GIII
 
 Currently the port only serves Linux as an application (.g1a). In the future, I would want to make 
 it run independently. To build the application and payloads (vmlinux and ram), I use this script that I've made:
