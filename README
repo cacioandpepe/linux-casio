@@ -2,7 +2,7 @@ Linux on the Casio hardware
 
 Linux kernel port for the Casio devices. 
 
-Current status
+Current status:
 ===========================
 
 FX-9750GIII
@@ -28,6 +28,8 @@ To do stuff:
 - Run a minimal BusyBox environment.
 
 Note: I keep scripts separate from GitHub, and I post them on Codeberg instead.
+As of October 17, 2026 this repository is read-only, main repository would be on:
+https://git.planet-casio.com/cacioandpepe/linux-casio
 
 Linux kernel
 ============
