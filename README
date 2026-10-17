@@ -1,6 +1,4 @@
-Linux on the Casio hardware
-
-Linux kernel port for the Casio devices. 
+Linux on the Casio Graphing Calculator hardware
 
 Current status:
 ===========================
@@ -8,7 +6,7 @@ Current status:
 FX-9750GIII
 
 Currently the port only serves Linux as an application (.g1a). In the future, I would want to make 
-it run independently. To build the application and payloads (vmlinux and ram), I use this script that I've made:
+it run independently (ROM). To build the application and payloads (vmlinux and ram), I use this script that I've made:
 https://codeberg.org/cacioandpepe/linux-loader-casio
 
 Kernel load up is done, however right now I'm currently working on 
@@ -28,8 +26,26 @@ To do stuff:
 - Run a minimal BusyBox environment.
 
 Note: I keep scripts separate from GitHub, and I post them on Codeberg instead.
-As of October 17, 2026 this repository is read-only, main repository would be on:
-https://git.planet-casio.com/cacioandpepe/linux-casio
+
+Regarding any contributing. You can PR here, and I would appreciate,
+not emailing any patches (git send-email to SuperH branch contributing) with code that has my name on it. And anything that has not been verified its either working or not
+
+If you're the one who is using any LLM's or AI and is about to contribute with a PR request e.g.
+you are responsible for testing and if anything breakes.
+
+In the future development we would need testers with the calculators, so it's 100% guaranteed
+we are done with developing a branch (branches will indicate what calculator is developing) to
+Linux's maintainers.
+
+Resources that help will help to contribute:
+
+Application builder: https://git.planet-casio.com/cacioandpepe/linux-loader-casio (only supported for FX-9750GIII, other models that are in FX-9760GIII are not tested)
+Wiki for definitions and development sort out: https://www.wiki.kernel.org/
+GNU Cross Compiler (GCC): https://git.planet-casio.com/cacioandpepe/casio-gcc
+GNU Binutils: https://git.planet-casio.com/cacioandpepe/casio-binutils
+Mass storage fix script for those who develop on Linux: https://git.planet-casio.com/cacioandpepe/casio-usb-fix
+
+For LICENSE see README information below. Some terms only apply to this branch
 
 Linux kernel
 ============
