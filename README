@@ -26,6 +26,7 @@ To do stuff:
 - Run a minimal BusyBox environment.
 
 Note: I keep scripts separate from GitHub, and I post them on Codeberg instead.
+Forum discussion: https://www.planet-casio.com/Fr/forums/topic19747-1-linux-on-the-casios-graphing-calculator-hardware.html#202760
 
 Regarding any contributing. You can PR here, and I would appreciate,
 not emailing any patches (git send-email to SuperH branch contributing) with code that has my name on it. And anything that has not been verified its either working or not
