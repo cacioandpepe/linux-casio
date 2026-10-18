@@ -1,17 +1,17 @@
 Linux on the Casio hardware
 
-Linux kernel port for the Casio devices. 
+Linux kernel port for the Casio devices.
 
 Current status:
 ===========================
 
 FX-9750GIII
 
-Currently the port only serves Linux as an application (.g1a). In the future, I would want to make 
+Currently the port only serves Linux as an application (.g1a). In the future, I would want to make
 it run independently. To build the application and payloads (vmlinux and ram), I use this script that I've made:
 https://codeberg.org/cacioandpepe/linux-loader-casio
 
-Kernel load up is done, however right now I'm currently working on 
+Kernel load up is done, however right now I'm currently working on
 Device Tree Support, for a full contribution.
 
 The project includes SH7305 platform support, custom bootloader development,
