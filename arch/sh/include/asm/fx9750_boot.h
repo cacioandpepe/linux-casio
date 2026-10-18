@@ -61,11 +61,11 @@ void fx9750_lcd_panic_checkpoint(const char *reason);
 void fx9750_lcd_first_oops(unsigned long pc, unsigned long pr, unsigned long tea, unsigned long sp, unsigned long err);
 #endif
 
-#endif
-
 #ifdef CONFIG_SH_FX9750GIII
 void fx9750_lcd_oom_snapshot(unsigned long order,
                             unsigned long gfp,
                             unsigned long free_pages,
                             unsigned long pid);
 #endif
+
+#endif /* __ASM_SH_SH7305_BOOT_H */
