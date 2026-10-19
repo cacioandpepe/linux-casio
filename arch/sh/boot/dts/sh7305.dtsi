@@ -30,7 +30,7 @@
 	 * hardware. Clock provider integration is still required.
 	 */
 	tmu0: timer@a4490000 {
-		compatible = "renesas,sh7305-tmu", "renesas,tmu";
+		compatible = "renesas,tmu-sh7305", "renesas,tmu";
 		reg = <0xa4490000 0x2c>;
 		interrupts = <0x400>, <0x420>, <0x440>;
 		interrupt-names = "tuni0", "tuni1", "tuni2";
